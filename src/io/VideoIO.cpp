@@ -57,9 +57,32 @@ bool VideoIO::readNextFrame(FrameYUV& outFrame) {
         return false; 
     }
 
+    // --- PADDING ---
+    // Calcula quantos pixels faltam para a largura e altura serem múltiplas de 8.
+    // Exemplo: Se width = 1925. 1925 % 8 = 5. Faltam (8 - 5) = 3 pixels.
+    // O segundo "% 8" garante que, se faltar 8 (ou seja, já é múltiplo), o resultado zere.
+    int padRight = (8 - (width % 8)) % 8;
+    int padBottom = (8 - (height % 8)) % 8;
+
+    cv::Mat framePadded;
+    
+    if (padRight > 0 || padBottom > 0) {
+        // Aplica a Replicação de Borda
+        // Adiciona 0 pixels no topo e esquerda, e 'padBottom'e'padRight' embaixo e na direita
+        cv::copyMakeBorder(frameBGR, framePadded, 
+                           0, padBottom, 0, padRight, 
+                           cv::BORDER_REPLICATE);
+    } else {
+        framePadded = frameBGR; // Já está nas dimensões desejadas.  Apenas copia a referência
+    }
+
+    // Capturamos as novas dimensões (que agora são garantidamente múltiplas de 8)
+    int paddedWidth = framePadded.cols;
+    int paddedHeight = framePadded.rows;
+
     // Converte de BGR para YCrCb (O padrao do OpenCV equivalente ao YUV)
     cv::Mat frameYCrCb;
-    cv::cvtColor(frameBGR, frameYCrCb, cv::COLOR_BGR2YCrCb);
+    cv::cvtColor(framePadded, frameYCrCb, cv::COLOR_BGR2YCrCb);
 
     // Separa os canais
     std::vector<cv::Mat> channels;
@@ -74,8 +97,8 @@ bool VideoIO::readNextFrame(FrameYUV& outFrame) {
 
     // Subamostragem de cores (4:2:0)
     // Reduz a largura e a altura dos canais de cor pela metade usando interpolacao (a cada bloco de 2x2 pixels, calcula média dos valores e salva resultado em 1 pixel)
-    cv::resize(channels[1], outFrame.Cr, cv::Size(width / 2, height / 2), 0, 0, cv::INTER_LINEAR);
-    cv::resize(channels[2], outFrame.Cb, cv::Size(width / 2, height / 2), 0, 0, cv::INTER_LINEAR);
+    cv::resize(channels[1], outFrame.Cr, cv::Size(paddedWidth / 2, paddedHeight / 2), 0, 0, cv::INTER_LINEAR);
+    cv::resize(channels[2], outFrame.Cb, cv::Size(paddedWidth / 2, paddedHeight / 2), 0, 0, cv::INTER_LINEAR);
 
     return true;
 }
