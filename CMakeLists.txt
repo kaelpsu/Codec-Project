@@ -15,6 +15,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 add_executable(my_codec 
     src/main.cpp 
     src/io/VideoIO.cpp
+    src/processing/SpatialTransformation.cpp
     # Conforme criar novos modulos, adicioná-los aqui
 )
 
