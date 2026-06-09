@@ -51,21 +51,21 @@ int main() {
                 cv::Mat subMatrixCV = channelY(area);
 
                 // Conversão de Tipos (De byte para double)
-                Block8x8 blocoPixels(8, std::vector<double>(8, 0.0));
+                Block8x8 pixelsBlock(8, std::vector<double>(8, 0.0));
                 for (int i = 0; i < 8; i++) {
                     for (int j = 0; j < 8; j++) {
                         // IMPORTANTE: O OpenCV guarda pixels em escala de cinza como 'uint8_t' (unsigned char).
                         // Precisamos converter isso para 'double' para a equação da DCT não falhar.
-                        blocoPixels[i][j] = static_cast<double>(subMatrixCV.at<uint8_t>(i, j));
+                        pixelsBlock[i][j] = static_cast<double>(subMatrixCV.at<uint8_t>(i, j));
                     }
                 }
 
                 // 3. A Compressão Matemática
-                Block8x8 blocoDCT = spatialTransformer.applyDCT(blocoPixels);
-                Block8x8 blocoQuantizado = spatialTransformer.applyQuantization(blocoDCT);
+                Block8x8 dctBlock = spatialTransformer.applyDCT(pixelsBlock);
+                Block8x8 quantizedBlock = spatialTransformer.applyQuantization(dctBlock);
 
                 // 4. Salva o bloco destruído e pronto para empacotamento
-                quantizedFrameBlocks.push_back(blocoQuantizado);
+                quantizedFrameBlocks.push_back(quantizedBlock);
             }
         }
 
@@ -81,10 +81,10 @@ int main() {
             // Para não travar o terminal com milhares de blocos, imprime o resultado matemático do PRIMEIRO BLOCO do PRIMEIRO FRAME:
             if (frameCounter == 1) {
                 std::cout << "\n--- Amostra do Primeiro Bloco Quantizado ---" << std::endl;
-                Block8x8 amostra = quantizedFrameBlocks[0];
+                Block8x8 sample = quantizedFrameBlocks[0];
                 for (int i = 0; i < 8; i++) {
                     for (int j = 0; j < 8; j++) {
-                        printf("%4.0f ", amostra[i][j]); 
+                        printf("%4.0f ", sample[i][j]); 
                     }
                     std::cout << std::endl;
                 }
@@ -101,8 +101,8 @@ int main() {
 
             // Aguarda 30 milissegundos (~33 FPS) para dar tempo de renderizar a imagem na tela
             // Se o usuario apertar 'q' (quit) ou a tecla ESC (codigo 27), interrompe o loop
-            char tecla = (char)cv::waitKey(30);
-            if (tecla == 'q' || tecla == 27) {
+            char keyPressed = (char)cv::waitKey(30);
+            if (keyPressed == 'q' || keyPressed == 27) {
                 std::cout << "Reproducao interrompida pelo usuario." << std::endl;
                 break;
             }
